@@ -24,7 +24,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"goupdate"
+	"github.com/Forkk/GoUpdate/repo"
 )
 
 // Structure for holding information about a file that already exists in the file storage directory.

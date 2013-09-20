@@ -21,7 +21,7 @@ import (
 	"os"
 	"path"
 
-	"goupdate"
+	"github.com/Forkk/GoUpdate/repo"
 )
 
 func CreateRepo(repoDir string) CommandError {
