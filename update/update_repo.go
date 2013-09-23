@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package update
 
 import (
 	"encoding/json"
@@ -23,9 +23,41 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"strconv"
+
+	"github.com/Forkk/repoman/subcmd"
+	"github.com/Forkk/repoman/md5util"
 
 	"github.com/Forkk/GoUpdate/repo"
 )
+
+type Command struct {}
+
+func (cmd Command) Summary() string { return "Updates a given repository with the files in a given directory." }
+func (cmd Command) Description() string { return "The update command updates a given repository with a set of files in a given directory. It then creates a new version for those files based on the given arguments." }
+func (cmd Command) Usage() string { return "REPO_DIR FILE_STORAGE URL_BASE UPDATE_DIR VERSION_NAME VERSION_ID" }
+func (cmd Command) ArgHelp() string { return "REPO_DIR - The directory name of the repository to update.\nFILE_STORAGE - The path to the directory where the update files will be stored.\nURL_BASE - The base URL to use to create HTTP sources in the new version. This should point to the file storage directory so any files in the file storage directory can be accessed via this base URL.\nUPDATE_DIR - The directory containing the new version's files.\nVERSION_NAME - The version name (e.g. 4.3.0.42) of the new version.\nVERSION_ID - The new version's integer ID." }
+
+func (cmd Command) Execute(args ...string) subcmd.Error {
+	if len(args) < 6 {
+		return subcmd.UsageError("'update' command requires at least six arguments.")
+	} else {
+		repoDir := args[0]
+		filesDir := args[1]
+		urlBase := args[2]
+		newVersionDir := args[3]
+		versionName := args[4]
+		versionIdStr := args[5]
+
+		versionId, err := strconv.ParseInt(versionIdStr, 10, 0)
+
+		if err != nil {
+			return subcmd.UsageError("Version ID must be a positive integer.")
+		} else {
+			return UpdateRepo(repoDir, filesDir, urlBase, newVersionDir, versionName, int(versionId))
+		}
+	}
+}
 
 // Structure for holding information about a file that already exists in the file storage directory.
 type fileStorageData struct {
@@ -38,7 +70,7 @@ type fileStorageData struct {
 	MD5 string
 }
 
-func UpdateRepo(repoDir, filesDir, urlBase, newVersionDir, versionName string, versionId int) CommandError {
+func UpdateRepo(repoDir, filesDir, urlBase, newVersionDir, versionName string, versionId int) subcmd.Error {
 	if !strings.HasSuffix(urlBase, "/") {
 		urlBase += "/"
 	}
@@ -58,9 +90,9 @@ func UpdateRepo(repoDir, filesDir, urlBase, newVersionDir, versionName string, v
 			msg = "Can't access repository directory: an unknown error occurred."
 			code = -2
 		}
-		return CausedError(fmt.Sprintf("Can't update repository %s: %s", repoDir, msg), code, err)
+		return subcmd.CausedError(fmt.Sprintf("Can't update repository %s: %s", repoDir, msg), code, err)
 	} else if !info.IsDir() {
-		return ErrorMessage(fmt.Sprintf("Can't update repository. The path %s is not a valid repository. Must be a directory.", repoDir), 10)
+		return subcmd.MessageError(fmt.Sprintf("Can't update repository. The path %s is not a valid repository. Must be a directory.", repoDir), 10)
 	}
 
 	// Also make sure the file storage directory exists.
@@ -78,9 +110,9 @@ func UpdateRepo(repoDir, filesDir, urlBase, newVersionDir, versionName string, v
 			msg = "Can't access file storage directory: an unknown error occurred."
 			code = -2
 		}
-		return CausedError(fmt.Sprintf("Can't update repository %s: %s", repoDir, msg), code, err)
+		return subcmd.CausedError(fmt.Sprintf("Can't update repository %s: %s", repoDir, msg), code, err)
 	} else if !info.IsDir() {
-		return ErrorMessage(fmt.Sprintf("The path %s is not a valid file storage directory. Must be a directory.", filesDir), 11)
+		return subcmd.MessageError(fmt.Sprintf("The path %s is not a valid file storage directory. Must be a directory.", filesDir), 11)
 	}
 
 	// And the new version's directory...
@@ -98,9 +130,9 @@ func UpdateRepo(repoDir, filesDir, urlBase, newVersionDir, versionName string, v
 			msg = "Can't access new version directory: an unknown error occurred."
 			code = -2
 		}
-		return CausedError(fmt.Sprintf("Can't update repository %s: %s", repoDir, msg), code, err)
+		return subcmd.CausedError(fmt.Sprintf("Can't update repository %s: %s", repoDir, msg), code, err)
 	} else if !info.IsDir() {
-		return ErrorMessage(fmt.Sprintf("The path %s is not a valid new version directory. Must be a directory.", filesDir), 12)
+		return subcmd.MessageError(fmt.Sprintf("The path %s is not a valid new version directory. Must be a directory.", filesDir), 12)
 	}
 
 	// Get the path to the index file.
@@ -123,24 +155,24 @@ func UpdateRepo(repoDir, filesDir, urlBase, newVersionDir, versionName string, v
 			msg = "An unknown error occurred when trying to read the repository's index file."
 			code = -2
 		}
-		return CausedError(fmt.Sprintf("Can't update repository %s: %s", repoDir, msg), code, indexErr)
+		return subcmd.CausedError(fmt.Sprintf("Can't update repository %s: %s", repoDir, msg), code, indexErr)
 	}
 
 	// Unmarshal the JSON.
 	var indexData repo.Index
 	if err := json.Unmarshal(fileData, &indexData); err != nil {
-		return CausedError(fmt.Sprintf("Can't update repository %s: %s", repoDir), 12, err)
+		return subcmd.CausedError(fmt.Sprintf("Can't update repository %s: %s", repoDir), 12, err)
 	}
 
 	// TODO: Cache calculated MD5s for the file storage directory.
-	newVersionMD5s, nvMD5Err := RecursiveMD5Calc(newVersionDir, []string{})
+	newVersionMD5s, nvMD5Err := md5util.RecursiveMD5Calc(newVersionDir, []string{})
 	if nvMD5Err != nil {
-		return CausedError(fmt.Sprintf("Can't update repository %s: Failed to calculate MD5s for new version directory (%s).", repoDir, filesDir), 30, nvMD5Err)
+		return subcmd.CausedError(fmt.Sprintf("Can't update repository %s: Failed to calculate MD5s for new version directory (%s).", repoDir, filesDir), 30, nvMD5Err)
 	}
 
-	fileStorageMD5s, fsMD5Err := RecursiveMD5Calc(filesDir, []string{})
+	fileStorageMD5s, fsMD5Err := md5util.RecursiveMD5Calc(filesDir, []string{})
 	if fsMD5Err != nil {
-		return CausedError(fmt.Sprintf("Can't update repository %s: Failed to calculate MD5s for file storage directory (%s).", repoDir, filesDir), 31, fsMD5Err)
+		return subcmd.CausedError(fmt.Sprintf("Can't update repository %s: Failed to calculate MD5s for file storage directory (%s).", repoDir, filesDir), 31, fsMD5Err)
 	}
 
 	// File storage map. This maps the install paths of files to their path within the file storage directory.
@@ -149,7 +181,7 @@ func UpdateRepo(repoDir, filesDir, urlBase, newVersionDir, versionName string, v
 	if len(fileStorageMD5s) <= 0 {
 		// HACK: This array needs at least one entry in order for the below code to actually add files to storage, so we add a dummy entry.
 		// The other option was to have two separate loops and meh.
-		fileStorageMD5s = []FileMD5Data{FileMD5Data{Path: "", MD5: ""}}
+		fileStorageMD5s = []md5util.FileMD5Data{md5util.FileMD5Data{Path: "", MD5: ""}}
 	}
 
 	addToStorage := []fileStorageData{}
@@ -196,12 +228,12 @@ func UpdateRepo(repoDir, filesDir, urlBase, newVersionDir, versionName string, v
 		outFilePath := path.Join(filesDir, mapping.FileStoragePath)
 		fileOut, createErr := os.Create(outFilePath)
 		if createErr != nil {
-			return CausedError(fmt.Sprintf("Failed updating repository %s. Couldn't create file %s.", repoDir, outFilePath), 42, createErr)
+			return subcmd.CausedError(fmt.Sprintf("Failed updating repository %s. Couldn't create file %s.", repoDir, outFilePath), 42, createErr)
 		}
 		inFilePath := path.Join(newVersionDir, mapping.InstallPath)
 		fileIn, readErr := os.Open(inFilePath)
 		if readErr != nil {
-			return CausedError(fmt.Sprintf("Failed updating repository %s. Couldn't read file %s.", repoDir, inFilePath), 43, readErr)
+			return subcmd.CausedError(fmt.Sprintf("Failed updating repository %s. Couldn't read file %s.", repoDir, inFilePath), 43, readErr)
 		}
 		io.Copy(fileOut, fileIn)
 		fileStorageMap = append(fileStorageMap, mapping)
@@ -240,7 +272,7 @@ func UpdateRepo(repoDir, filesDir, urlBase, newVersionDir, versionName string, v
 			msg = "An unknown error occurred when trying to write the version file."
 			code = -2
 		}
-		return CausedError(fmt.Sprintf("Can't update repository %s: %s", repoDir, msg), code, err)
+		return subcmd.CausedError(fmt.Sprintf("Can't update repository %s: %s", repoDir, msg), code, err)
 	} else {
 		//jsonData, _ := json.MarshalIndent(versionData, "", "    ")
 		jsonData, _ := json.Marshal(versionData)
@@ -259,7 +291,7 @@ func UpdateRepo(repoDir, filesDir, urlBase, newVersionDir, versionName string, v
 			msg = "An unknown error occurred when trying to write the index file."
 			code = -2
 		}
-		return CausedError(fmt.Sprintf("Can't update repository %s: %s", repoDir, msg), code, err)
+		return subcmd.CausedError(fmt.Sprintf("Can't update repository %s: %s", repoDir, msg), code, err)
 	} else {
 		jsonData, _ := json.Marshal(indexData)
 		indexFile.Write(jsonData)
