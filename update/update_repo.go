@@ -22,21 +22,29 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
 	"strconv"
+	"strings"
 
-	"github.com/Forkk/repoman/subcmd"
 	"github.com/Forkk/repoman/md5util"
+	"github.com/Forkk/repoman/subcmd"
 
 	"github.com/Forkk/GoUpdate/repo"
 )
 
-type Command struct {}
+type Command struct{}
 
-func (cmd Command) Summary() string { return "Updates a given repository with the files in a given directory." }
-func (cmd Command) Description() string { return "The update command updates a given repository with a set of files in a given directory. It then creates a new version for those files based on the given arguments." }
-func (cmd Command) Usage() string { return "REPO_DIR FILE_STORAGE URL_BASE UPDATE_DIR VERSION_NAME VERSION_ID" }
-func (cmd Command) ArgHelp() string { return "REPO_DIR - The directory name of the repository to update.\nFILE_STORAGE - The path to the directory where the update files will be stored.\nURL_BASE - The base URL to use to create HTTP sources in the new version. This should point to the file storage directory so any files in the file storage directory can be accessed via this base URL.\nUPDATE_DIR - The directory containing the new version's files.\nVERSION_NAME - The version name (e.g. 4.3.0.42) of the new version.\nVERSION_ID - The new version's integer ID." }
+func (cmd Command) Summary() string {
+	return "Updates a given repository with the files in a given directory."
+}
+func (cmd Command) Description() string {
+	return "The update command updates a given repository with a set of files in a given directory. It then creates a new version for those files based on the given arguments."
+}
+func (cmd Command) Usage() string {
+	return "REPO_DIR FILE_STORAGE URL_BASE UPDATE_DIR VERSION_NAME VERSION_ID"
+}
+func (cmd Command) ArgHelp() string {
+	return "REPO_DIR - The directory name of the repository to update.\nFILE_STORAGE - The path to the directory where the update files will be stored.\nURL_BASE - The base URL to use to create HTTP sources in the new version. This should point to the file storage directory so any files in the file storage directory can be accessed via this base URL.\nUPDATE_DIR - The directory containing the new version's files.\nVERSION_NAME - The version name (e.g. 4.3.0.42) of the new version.\nVERSION_ID - The new version's integer ID."
+}
 
 func (cmd Command) Execute(args ...string) subcmd.Error {
 	if len(args) < 6 {

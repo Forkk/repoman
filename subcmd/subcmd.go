@@ -22,7 +22,6 @@ import (
 	"fmt"
 )
 
-
 // Subcommand is an interface for RepoMan's subcommands to implement.
 type Command interface {
 	// Execute executes the command, returning a subcmd.Error if an error occurred.
@@ -41,7 +40,6 @@ type Command interface {
 	ArgHelp() string
 }
 
-
 // Error is an interface that provides information about an error that occurred while executing a subcommand.
 type Error interface {
 	// Implement the error interface.
@@ -58,7 +56,6 @@ type Error interface {
 	// ShowUsage returns true if the Usage information for the command that returned this error should be printed after the command's Error string.
 	ShowUsage() bool
 }
-
 
 // Struct that represents an error that was not caused by another error.
 type msgError struct {
@@ -116,4 +113,3 @@ func MessageError(message string, exitCode int) Error {
 func UsageError(message string) Error {
 	return msgError{msg: message, exitCode: -1, cause: nil, printUsage: true}
 }
-

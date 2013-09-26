@@ -17,6 +17,7 @@ package main
 import (
 	"fmt"
 	"github.com/Forkk/repoman/create"
+	"github.com/Forkk/repoman/mkchan"
 	"github.com/Forkk/repoman/subcmd"
 	"github.com/Forkk/repoman/update"
 	"os"
@@ -30,6 +31,7 @@ func main() {
 		"help":   helpCommand{},
 		"create": create.Command{},
 		"update": update.Command{},
+		"mkchan": mkchan.Command{},
 	}
 
 	// Get the command line arguments.

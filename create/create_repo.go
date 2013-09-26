@@ -30,12 +30,16 @@ import (
 	"github.com/Forkk/GoUpdate/repo"
 )
 
-type Command struct {}
+type Command struct{}
 
 func (cmd Command) Summary() string { return "Creates a new GoUpdate repository." }
-func (cmd Command) Description() string { return "Creates a new, blank GoUpdate repository at a given path." }
+func (cmd Command) Description() string {
+	return "Creates a new, blank GoUpdate repository at a given path."
+}
 func (cmd Command) Usage() string { return "REPO_DIR" }
-func (cmd Command) ArgHelp() string { return "REPO_DIR - The repository's directory. This directory must not already exist. It will be created." }
+func (cmd Command) ArgHelp() string {
+	return "REPO_DIR - The repository's directory. This directory must not already exist. It will be created."
+}
 
 func (cmd Command) Execute(args ...string) subcmd.Error {
 	// Determine what directory to create the repository in.
@@ -46,7 +50,6 @@ func (cmd Command) Execute(args ...string) subcmd.Error {
 		return CreateRepo(repoDir)
 	}
 }
-
 
 func CreateRepo(repoDir string) subcmd.Error {
 	//fileMode := (os.FileMode) 644
