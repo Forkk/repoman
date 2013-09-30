@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package mkchan
+package setchan
 
 import (
 	"encoding/json"
@@ -22,31 +22,49 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"strconv"
 )
 
 type Command struct{}
 
-func (cmd Command) Summary() string { return "Creates a new release channel in a repository." }
-func (cmd Command) Description() string {
-	return "Creates a new release channel in a given repository. Once this is done, you may set the channel's version ID with the 'chanset' command."
+func (cmd Command) Summary() string {
+	return "Sets the current version of a repository's channel. Can also be used to remove the channel if the version isn't specified."
 }
-func (cmd Command) Usage() string { return "REPO_DIR CHANNEL_ID" }
+func (cmd Command) Description() string {
+	return "Sets the current version of the given channel in the given repository to the given version ID. If no version ID is specified, the given channel will be deleted."
+}
+func (cmd Command) Usage() string {
+	return "REPO_DIR CHANNEL_ID [VERSION_ID]"
+}
 func (cmd Command) ArgHelp() string {
-	return "REPO_DIR - The repository directory to create the channel in.\nCHANNEL_ID - Unique string ID of the channel to create."
+	return "REPO_DIR - The repository directory to create the channel in.\nCHANNEL_ID - Unique string ID of the channel to create.\nVERSION_ID - Optional version ID. If specified, the given channel's current version will be set to this version ID. If not specified, the given channel will be removed."
 }
 
 func (cmd Command) Execute(args ...string) subcmd.Error {
 	if len(args) < 2 {
-		return subcmd.UsageError("'mkchan' command takes at least two arguments.")
+		return subcmd.UsageError("'setchan' command takes at least two arguments.")
 	} else {
 		repoDir := args[0]
 		chanId := args[1]
-		return CreateChan(repoDir, chanId)
+		versionIdStr := args[2]
+
+		versionId, err := strconv.ParseInt(versionIdStr, 10, 0)
+
+		if err != nil {
+			return subcmd.UsageError("Version ID must be a positive integer.")
+		} else {
+			return SetChan(repoDir, chanId, int(versionId))
+		}
 	}
 }
 
-func CreateChan(repoDir, chanId string) subcmd.Error {
-	errFmt := fmt.Sprintf("Can't create channel '%s' for repository '%s': %%s", chanId, repoDir)
+func SetChan(repoDir, chanId string, versionId int) subcmd.Error {
+	var errFmt string
+	if versionId >= 0 {
+		errFmt = fmt.Sprintf("Can't set channel '%s' to version '%d' for repository '%s': %%s", chanId, versionId, repoDir)
+	} else {
+		errFmt = fmt.Sprintf("Can't remove channel '%s' from repository '%s': %%s", chanId, repoDir)
+	}
 
 	// Make sure the repository directory exists.
 	if info, err := os.Stat(repoDir); err != nil {
@@ -96,20 +114,33 @@ func CreateChan(repoDir, chanId string) subcmd.Error {
 		return subcmd.CausedError(fmt.Sprintf(errFmt), 12, err)
 	}
 
-	// Now make sure the channel doesn't already exist.
-	for _, existingChan := range indexData.Channels {
+	// Now, check if the channel exists and, if so, set its current version to the version ID given (or remove it if version ID is < 0).
+	chanExists := false
+	for i, existingChan := range indexData.Channels {
 		if existingChan.Id == chanId {
-			return subcmd.MessageError(fmt.Sprintf(errFmt, "Channel already exists"), 42)
+			if versionId < 0 {
+				// Removing from a slice is messy, but this works.
+				// Basically, it splits the slice into two parts, the first half being everything before the index to remove and the second half being everything after the index to remove.
+				// Then, just append those two together.
+				indexData.Channels = append(indexData.Channels[:i], indexData.Channels[i+1:]...)
+			} else {
+				existingChan.CurrentVersion = versionId
+			}
+			chanExists = true
+			break
 		}
 	}
 
-	// Now create the channel.
-	channel := repo.Channel{Id: chanId, Name: chanId}
+	// If the channel doesn't already exist, add it.
+	if !chanExists {
+		// Create a new, blank channel data structure with the given version ID as its current version. We'll overwrite this with the existing one if it exists.
+		channel := repo.Channel{Id: chanId, Name: chanId, CurrentVersion: versionId}
 
-	// Add the channel to the index.
-	indexData.Channels = append(indexData.Channels, channel)
+		// Add the channel to the list.
+		indexData.Channels = append(indexData.Channels, channel)
+	}
 
-	// And finally, write the index back to the file.
+	// Finally, write the index back to the file.
 	if indexFile, err := os.OpenFile(indexFilePath, os.O_RDWR, 0644); err != nil {
 		var code int
 		var msg string

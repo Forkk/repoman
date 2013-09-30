@@ -17,7 +17,7 @@ package main
 import (
 	"fmt"
 	"github.com/Forkk/repoman/create"
-	"github.com/Forkk/repoman/mkchan"
+	"github.com/Forkk/repoman/setchan"
 	"github.com/Forkk/repoman/subcmd"
 	"github.com/Forkk/repoman/update"
 	"os"
@@ -28,10 +28,10 @@ var commands map[string]subcmd.Command
 func main() {
 	// Initialize the command map.
 	commands = map[string]subcmd.Command{
-		"help":   helpCommand{},
-		"create": create.Command{},
-		"update": update.Command{},
-		"mkchan": mkchan.Command{},
+		"help":    helpCommand{},
+		"create":  create.Command{},
+		"update":  update.Command{},
+		"setchan": setchan.Command{},
 	}
 
 	// Get the command line arguments.
