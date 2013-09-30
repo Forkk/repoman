@@ -46,7 +46,11 @@ func (cmd Command) Execute(args ...string) subcmd.Error {
 	} else {
 		repoDir := args[0]
 		chanId := args[1]
-		versionIdStr := args[2]
+		versionIdStr := "-1"
+
+		if len(args) >= 3 {
+			versionIdStr = args[2]
+		}
 
 		versionId, err := strconv.ParseInt(versionIdStr, 10, 0)
 
@@ -111,7 +115,7 @@ func SetChan(repoDir, chanId string, versionId int) subcmd.Error {
 	// Unmarshal the JSON.
 	var indexData repo.Index
 	if err := json.Unmarshal(fileData, &indexData); err != nil {
-		return subcmd.CausedError(fmt.Sprintf(errFmt), 12, err)
+		return subcmd.CausedError(fmt.Sprintf(errFmt, err.Error()), 12, err)
 	}
 
 	// Now, check if the channel exists and, if so, set its current version to the version ID given (or remove it if version ID is < 0).
@@ -125,6 +129,7 @@ func SetChan(repoDir, chanId string, versionId int) subcmd.Error {
 				indexData.Channels = append(indexData.Channels[:i], indexData.Channels[i+1:]...)
 			} else {
 				existingChan.CurrentVersion = versionId
+				indexData.Channels[i] = existingChan
 			}
 			chanExists = true
 			break
@@ -141,7 +146,7 @@ func SetChan(repoDir, chanId string, versionId int) subcmd.Error {
 	}
 
 	// Finally, write the index back to the file.
-	if indexFile, err := os.OpenFile(indexFilePath, os.O_RDWR, 0644); err != nil {
+	if indexFile, err := os.OpenFile(indexFilePath, os.O_WRONLY | os.O_TRUNC, 0644); err != nil {
 		var code int
 		var msg string
 		switch {
