@@ -79,6 +79,7 @@ type fileStorageData struct {
 }
 
 func UpdateRepo(repoDir, filesDir, urlBase, newVersionDir, versionName string, versionId int) subcmd.Error {
+	fileMode := os.FileMode(0644)
 	if !strings.HasSuffix(urlBase, "/") {
 		urlBase += "/"
 	}
@@ -234,7 +235,7 @@ func UpdateRepo(repoDir, filesDir, urlBase, newVersionDir, versionName string, v
 	// Now, we need to go through our add to storage list, copy all the files into file storage, and add them to our file mapping.
 	for _, mapping := range addToStorage {
 		outFilePath := path.Join(filesDir, mapping.FileStoragePath)
-		fileOut, createErr := os.Create(outFilePath)
+		fileOut, createErr := os.OpenFile(outFilePath, os.O_WRONLY | os.O_CREATE | os.O_EXCL, fileMode)
 		if createErr != nil {
 			return subcmd.CausedError(fmt.Sprintf("Failed updating repository %s. Couldn't create file %s.", repoDir, outFilePath), 42, createErr)
 		}
@@ -266,7 +267,7 @@ func UpdateRepo(repoDir, filesDir, urlBase, newVersionDir, versionName string, v
 	indexData.Versions = append(indexData.Versions, repo.VersionSummary{Id: versionId, Name: versionName})
 
 	// Now write the version data to its file.
-	if verFile, err := os.OpenFile(path.Join(repoDir, fmt.Sprintf("%d.json", versionId)), os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644); err != nil {
+	if verFile, err := os.OpenFile(path.Join(repoDir, fmt.Sprintf("%d.json", versionId)), os.O_CREATE|os.O_EXCL|os.O_WRONLY, fileMode); err != nil {
 		var code int
 		var msg string
 		switch {
@@ -288,7 +289,7 @@ func UpdateRepo(repoDir, filesDir, urlBase, newVersionDir, versionName string, v
 	}
 
 	// And finally, write the index file.
-	if indexFile, err := os.OpenFile(indexFilePath, os.O_RDWR, 0644); err != nil {
+	if indexFile, err := os.OpenFile(indexFilePath, os.O_RDWR, fileMode); err != nil {
 		var code int
 		var msg string
 		switch {

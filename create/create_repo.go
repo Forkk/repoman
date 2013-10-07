@@ -52,11 +52,11 @@ func (cmd Command) Execute(args ...string) subcmd.Error {
 }
 
 func CreateRepo(repoDir string) subcmd.Error {
-	//fileMode := (os.FileMode) 644
-	fileMode := os.ModePerm
+	fileMode := os.FileMode(0644)
+	dirMode  := os.FileMode(0755)
 
 	// Try to create the repository directory. If it already exists, this should cause an error. We shouldn't try to create a repository in a directory that already exists.
-	if err := os.Mkdir(repoDir, fileMode); err != nil {
+	if err := os.Mkdir(repoDir, dirMode); err != nil {
 		if os.IsExist(err) {
 			// Tell the user we can't overwrite an existing repository.
 			return subcmd.CausedError(fmt.Sprintf("Can't create repository at %s because the directory already exists. Cannot create a repository in an existing directory.", repoDir), 11, err)
