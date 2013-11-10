@@ -25,9 +25,9 @@ import (
 	"os"
 	"path"
 
-	"github.com/Forkk/repoman/subcmd"
+	"github.com/MultiMC/repoman/subcmd"
 
-	"github.com/Forkk/GoUpdate/repo"
+	"github.com/MultiMC/GoUpdate/repo"
 )
 
 type Command struct{}

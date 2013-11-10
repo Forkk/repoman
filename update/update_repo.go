@@ -25,10 +25,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Forkk/repoman/md5util"
-	"github.com/Forkk/repoman/subcmd"
+	"github.com/MultiMC/repoman/md5util"
+	"github.com/MultiMC/repoman/subcmd"
 
-	"github.com/Forkk/GoUpdate/repo"
+	"github.com/MultiMC/GoUpdate/repo"
 )
 
 type Command struct{}

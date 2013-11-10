@@ -17,8 +17,8 @@ package setchan
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/Forkk/GoUpdate/repo"
-	"github.com/Forkk/repoman/subcmd"
+	"github.com/MultiMC/GoUpdate/repo"
+	"github.com/MultiMC/repoman/subcmd"
 	"io/ioutil"
 	"os"
 	"path"

@@ -16,10 +16,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/Forkk/repoman/create"
-	"github.com/Forkk/repoman/setchan"
-	"github.com/Forkk/repoman/subcmd"
-	"github.com/Forkk/repoman/update"
+	"github.com/MultiMC/repoman/create"
+	"github.com/MultiMC/repoman/setchan"
+	"github.com/MultiMC/repoman/subcmd"
+	"github.com/MultiMC/repoman/update"
 	"os"
 )
 
