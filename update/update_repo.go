@@ -240,6 +240,7 @@ func UpdateRepo(repoDir, filesDir, urlBase, newVersionDir, versionName string, v
 			return subcmd.CausedError(fmt.Sprintf("Failed updating repository %s. Couldn't create file %s.", repoDir, outFilePath), 42, createErr)
 		}
 		inFilePath := path.Join(newVersionDir, mapping.InstallPath)
+
 		fileIn, readErr := os.Open(inFilePath)
 		if readErr != nil {
 			return subcmd.CausedError(fmt.Sprintf("Failed updating repository %s. Couldn't read file %s.", repoDir, inFilePath), 43, readErr)
@@ -255,7 +256,15 @@ func UpdateRepo(repoDir, filesDir, urlBase, newVersionDir, versionName string, v
 
 	// Now, build the file list.
 	for _, fsMapData := range fileStorageMap {
-		fileInfo := repo.FileInfo{Path: fsMapData.InstallPath, Sources: []repo.FileSource{}, MD5: fsMapData.MD5}
+		
+		inFilePath := path.Join(newVersionDir, fsMapData.InstallPath)
+		info, _ := os.Stat(inFilePath)
+		mode := info.Mode()
+		perms := mode.Perm()
+		
+		fileInfo := repo.FileInfo{Path: fsMapData.InstallPath, Sources: []repo.FileSource{}, MD5: fsMapData.MD5, Perms: int(perms), Executable: (perms & 0111) != 0}
+
+		
 
 		// Add sources.
 		fileInfo.Sources = []repo.FileSource{repo.FileSource{SourceType: "http", Url: urlBase + fsMapData.FileStoragePath}}
